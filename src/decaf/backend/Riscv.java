@@ -21,46 +21,52 @@ import decaf.utils.MiscUtils;
 public class Riscv implements MachineDescription {
 
 	public static final RiscvRegister[] REGS = new RiscvRegister[] {
-			new RiscvRegister(RiscvRegister.RegId.ZERO, "$zero"),// zero
-			new RiscvRegister(RiscvRegister.RegId.AT, "$at"), // assembler
-			// temporary
-			new RiscvRegister(RiscvRegister.RegId.V0, "$v0"), // return value 0
-			new RiscvRegister(RiscvRegister.RegId.V1, "$v1"), // return value 1
-			new RiscvRegister(RiscvRegister.RegId.A0, "$a0"), // argument 0
-			new RiscvRegister(RiscvRegister.RegId.A1, "$a1"), // argument 1
-			new RiscvRegister(RiscvRegister.RegId.A2, "$a2"), // argument 2
-			new RiscvRegister(RiscvRegister.RegId.A3, "$a3"), // argument 3
-			new RiscvRegister(RiscvRegister.RegId.K0, "$k0"), // kernal 0
-			new RiscvRegister(RiscvRegister.RegId.K1, "$k1"), // kernal 1
-			new RiscvRegister(RiscvRegister.RegId.GP, "$gp"), // global pointer
-			new RiscvRegister(RiscvRegister.RegId.SP, "$sp"), // stack pointer
-			new RiscvRegister(RiscvRegister.RegId.FP, "$fp"), // frame pointer
-			new RiscvRegister(RiscvRegister.RegId.RA, "$ra"), // return address
-			new RiscvRegister(RiscvRegister.RegId.T0, "$t0"),
-			new RiscvRegister(RiscvRegister.RegId.T1, "$t1"),
-			new RiscvRegister(RiscvRegister.RegId.T2, "$t2"),
-			new RiscvRegister(RiscvRegister.RegId.T3, "$t3"),
-			new RiscvRegister(RiscvRegister.RegId.T4, "$t4"),
-			new RiscvRegister(RiscvRegister.RegId.T5, "$t5"),
-			new RiscvRegister(RiscvRegister.RegId.T6, "$t6"),
-			new RiscvRegister(RiscvRegister.RegId.T7, "$t7"),
-			new RiscvRegister(RiscvRegister.RegId.T8, "$t8"),
-			new RiscvRegister(RiscvRegister.RegId.T9, "$t9"),
-			new RiscvRegister(RiscvRegister.RegId.S0, "$s0"),
-			new RiscvRegister(RiscvRegister.RegId.S1, "$s1"),
-			new RiscvRegister(RiscvRegister.RegId.S2, "$s2"),
-			new RiscvRegister(RiscvRegister.RegId.S3, "$s3"),
-			new RiscvRegister(RiscvRegister.RegId.S4, "$s4"),
-			new RiscvRegister(RiscvRegister.RegId.S5, "$s5"),
-			new RiscvRegister(RiscvRegister.RegId.S6, "$s6"),
-			new RiscvRegister(RiscvRegister.RegId.S7, "$s7") };
+			new RiscvRegister(RiscvRegister.RegId.ZERO, "zero"),// zero
+			new RiscvRegister(RiscvRegister.RegId.RA, "ra"), // return address
+
+			new RiscvRegister(RiscvRegister.RegId.SP, "sp"), // stack pointer
+			new RiscvRegister(RiscvRegister.RegId.GP, "gp"), // global pointer
+			new RiscvRegister(RiscvRegister.RegId.TP, "tp"), // thread pointer
+
+			new RiscvRegister(RiscvRegister.RegId.T0, "t0"), // temp / link reg
+
+			new RiscvRegister(RiscvRegister.RegId.T1, "t1"), // temp
+			new RiscvRegister(RiscvRegister.RegId.T2, "t2"), 
+			
+			new RiscvRegister(RiscvRegister.RegId.FP, "fp"), // save reg / frame pointer
+			new RiscvRegister(RiscvRegister.RegId.S1, "s1"), // save reg
+
+			new RiscvRegister(RiscvRegister.RegId.A0, "a0"), // func args / return values
+			new RiscvRegister(RiscvRegister.RegId.A1, "a1"), 
+			new RiscvRegister(RiscvRegister.RegId.A2, "a2"), // func args
+			new RiscvRegister(RiscvRegister.RegId.A3, "a3"), 
+			new RiscvRegister(RiscvRegister.RegId.A4, "a4"),
+			new RiscvRegister(RiscvRegister.RegId.A5, "a5"),
+			new RiscvRegister(RiscvRegister.RegId.A6, "a6"),
+			new RiscvRegister(RiscvRegister.RegId.A7, "a7"),
+
+			new RiscvRegister(RiscvRegister.RegId.S2, "s2"), //save regs
+			new RiscvRegister(RiscvRegister.RegId.S3, "s3"),
+			new RiscvRegister(RiscvRegister.RegId.S4, "s4"),
+			new RiscvRegister(RiscvRegister.RegId.S5, "s5"),
+			new RiscvRegister(RiscvRegister.RegId.S6, "s6"),
+			new RiscvRegister(RiscvRegister.RegId.S7, "s7"),
+			new RiscvRegister(RiscvRegister.RegId.S8, "s8"),
+			new RiscvRegister(RiscvRegister.RegId.S9, "s9"),
+			new RiscvRegister(RiscvRegister.RegId.S10, "s10"),
+			new RiscvRegister(RiscvRegister.RegId.S11, "s11"),
+
+			new RiscvRegister(RiscvRegister.RegId.T3, "t3"),
+			new RiscvRegister(RiscvRegister.RegId.T4, "t4"),
+			new RiscvRegister(RiscvRegister.RegId.T5, "t5"),
+			new RiscvRegister(RiscvRegister.RegId.T6, "t6") };
 
 	public static final RiscvRegister[] GENERAL_REGS;
 	static {
 		GENERAL_REGS = new RiscvRegister[RiscvRegister.RegId.S7.ordinal()
 				- RiscvRegister.RegId.T0.ordinal()];
 		System.arraycopy(REGS, RiscvRegister.RegId.T0.ordinal(), GENERAL_REGS,
-				0, GENERAL_REGS.length);
+				0, GENERAL_REGS.length);  //TODO
 	}
 
 	private RegisterAllocator regAllocator;
@@ -104,7 +110,7 @@ public class Riscv implements MachineDescription {
 				genAsmForBB(bb);
 				for (Temp t : bb.saves) {
 					bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT4, "sw", t.reg,
-							t.offset, "$fp"));
+							t.offset, "fp"));
 				}
 			}
 			emitProlog(g.getFuncty().label, frameManager.getStackFrameSize());
@@ -155,25 +161,35 @@ public class Riscv implements MachineDescription {
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "or", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
 				break;
-			case GTR:
+			case GTR: // will auto become slt
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sgt", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
 				break;
-			case GEQ:
-				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sge", tac.op0.reg,
+			case GEQ: // no sge in Riscv!
+				bb.appendAsm(new RiscvAsm(RisicvAsm.FORMAT3, "slt", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "xori", tac.op0.reg,
+						tac.op0.reg, 1));
 				break;
-			case EQU:
-				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "seq", tac.op0.reg,
+			case EQU: // no seq in Riscv!
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sub", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "seqz", tac.op0.reg,
+						tac.op0.reg));
 				break;
-			case NEQ:
+			case NEQ: // no sne in Riscv!
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sne", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
-				break;
-			case LEQ:
-				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sle", tac.op0.reg,
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sub", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "snez", tac.op0.reg,
+						tac.op0.reg));
+				break;
+			case LEQ: // no sle in Riscv!
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sgt", tac.op0.reg,
+						tac.op1.reg, tac.op2.reg));
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "xori", tac.op0.reg,
+						tac.op0.reg, 1));
 				break;
 			case LES:
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "slt", tac.op0.reg,
@@ -189,7 +205,7 @@ public class Riscv implements MachineDescription {
 				break;
 			case ASSIGN:
 				if (tac.op0.reg != tac.op1.reg) {
-					bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "move",
+					bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "mv",
 							tac.op0.reg, tac.op1.reg));
 				}
 				break;
@@ -292,7 +308,7 @@ public class Riscv implements MachineDescription {
 						graph.getBlock(bb.next[0]).label.name), null);
 			} else {
 				emit(null, String.format(RiscvAsm.FORMAT3, "bne", bb.varReg,
-						"$zero", graph.getBlock(bb.next[0]).label.name), null);
+						"zero", graph.getBlock(bb.next[0]).label.name), null);
 			}
 
 			directNext = graph.getBlock(bb.next[1]);
