@@ -33,7 +33,7 @@ public class Riscv implements MachineDescription {
 			new RiscvRegister(RiscvRegister.RegId.T1, "t1"), // temp
 			new RiscvRegister(RiscvRegister.RegId.T2, "t2"), 
 			
-			new RiscvRegister(RiscvRegister.RegId.FP, "fp"), // save reg / frame pointer
+			new RiscvRegister(RiscvRegister.RegId.FP, "s0"), // save reg / frame pointer
 			new RiscvRegister(RiscvRegister.RegId.S1, "s1"), // save reg
 
 			new RiscvRegister(RiscvRegister.RegId.A0, "a0"), // func args / return values
@@ -63,9 +63,9 @@ public class Riscv implements MachineDescription {
 
 	public static final RiscvRegister[] GENERAL_REGS;
 	static {
-		GENERAL_REGS = new RiscvRegister[RiscvRegister.RegId.S7.ordinal()
-				- RiscvRegister.RegId.T0.ordinal()];
-		System.arraycopy(REGS, RiscvRegister.RegId.T0.ordinal(), GENERAL_REGS,
+		GENERAL_REGS = new RiscvRegister[RiscvRegister.RegId.T6.ordinal()
+				- RiscvRegister.RegId.S2.ordinal()];
+		System.arraycopy(REGS, RiscvRegister.RegId.S2.ordinal(), GENERAL_REGS,
 				0, GENERAL_REGS.length);  //TODO
 	}
 
@@ -96,7 +96,17 @@ public class Riscv implements MachineDescription {
 
 	@Override
 	public void emitAsm(List<FlowGraph> gs) {
-		emit(null, ".text", null);
+		emit(null, ".section .text", null);
+
+		emit("_PrintInt", null, null); // wait for print
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+		
+		emit("_PrintString", null, null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+		
+		emit("_Alloc", null, null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+
 		for (FlowGraph g : gs) {
 			regAllocator.reset();
 			for (BasicBlock bb : g) {
@@ -110,7 +120,7 @@ public class Riscv implements MachineDescription {
 				genAsmForBB(bb);
 				for (Temp t : bb.saves) {
 					bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT4, "sw", t.reg,
-							t.offset, "fp"));
+							t.offset, "s0"));  // s0 == fp
 				}
 			}
 			emitProlog(g.getFuncty().label, frameManager.getStackFrameSize());
@@ -124,9 +134,9 @@ public class Riscv implements MachineDescription {
 	}
 
 	private void emitStringConst() {
-		emit(null, ".data", null);
+		emit(null, ".section .rodata", null);
 		for (Entry<String, String> e : stringConst.entrySet()) {
-			emit(e.getValue(), ".asciiz " + MiscUtils.quote(e.getKey()), null);
+			emit(e.getValue(), ".string " + MiscUtils.quote(e.getKey()), null);
 		}
 	}
 
@@ -166,7 +176,7 @@ public class Riscv implements MachineDescription {
 						tac.op1.reg, tac.op2.reg));
 				break;
 			case GEQ: // no sge in Riscv!
-				bb.appendAsm(new RiscvAsm(RisicvAsm.FORMAT3, "slt", tac.op0.reg,
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "slt", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "xori", tac.op0.reg,
 						tac.op0.reg, 1));
@@ -213,10 +223,11 @@ public class Riscv implements MachineDescription {
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "la", tac.op0.reg,
 						tac.vt.name));
 				break;
-			case LOAD_IMM4:
+			case LOAD_IMM4: // hight 20 , not 16
 				if (!tac.op1.isConst) {
 					throw new IllegalArgumentException();
 				}
+				/*
 				int high = tac.op1.value >> 16;
 				int low = tac.op1.value & 0x0000FFFF;
 				if (high == 0) {
@@ -230,6 +241,9 @@ public class Riscv implements MachineDescription {
 								tac.op0.reg, tac.op0.reg, low));
 					}
 				}
+				*/
+				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "li",
+					tac.op0.reg, tac.op1.value));
 				break;
 			case LOAD_STR_CONST:
 				String label = getStringConstLabel(tac.str);
@@ -242,7 +256,7 @@ public class Riscv implements MachineDescription {
 				break;
 			case PARM:
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT4, "sw", tac.op0.reg,
-						tac.op1.value, "$sp"));
+						tac.op1.value, "sp"));
 				break;
 			case LOAD:
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT4, "lw", tac.op0.reg,
@@ -264,20 +278,28 @@ public class Riscv implements MachineDescription {
 	private void genAsmForCall(BasicBlock bb, Tac call) {
 		for (Temp t : call.saves) {
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT4, "sw", t.reg, t.offset,
-					"$fp"));
+					"s0"));
 		}
 		if (call.opc == Tac.Kind.DIRECT_CALL) {
+			/*
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "jal", call.label));
+			// jal offset == jal x1(=ra) offset
+			*/
+			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "call", call.label));
 		} else {
+			/*
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "jalr", call.op1.reg));
+			// jalr offset == jalr x1(=ra) offset 0
+			*/
+			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "tail", call.label));
 		}
 		if (call.op0 != null) {
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "move", call.op0.reg,
-					"$v0"));
+					"a0"));
 		}
 		for (Temp t : call.saves) {
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT4, "lw", t.reg, t.offset,
-					"$fp"));
+					"s0"));
 		}
 	}
 
@@ -295,7 +317,7 @@ public class Riscv implements MachineDescription {
 		case BY_BRANCH:
 			directNext = graph.getBlock(bb.next[0]);
 			if (directNext.mark) {
-				emit(null, String.format(RiscvAsm.FORMAT1, "b",
+				emit(null, String.format(RiscvAsm.FORMAT1, "j",
 						directNext.label.name), null);
 			} else {
 				emitTrace(directNext, graph);
@@ -322,27 +344,27 @@ public class Riscv implements MachineDescription {
 			break;
 		case BY_RETURN:
 			if (bb.var != null) {
-				emit(null, String.format(RiscvAsm.FORMAT2, "move", "$v0",
+				emit(null, String.format(RiscvAsm.FORMAT2, "mv", "a0",
 						bb.varReg), null);
 			}
-			emit(null, String.format(RiscvAsm.FORMAT2, "move", "$sp", "$fp"),
+			emit(null, String.format(RiscvAsm.FORMAT2, "move", "sp", "s0"),
 					null);
-			emit(null, String.format(RiscvAsm.FORMAT2, "lw", "$ra", "-4($fp)"),
+			emit(null, String.format(RiscvAsm.FORMAT2, "lw", "ra", "-4(s0)"),
 					null);
-			emit(null, String.format(RiscvAsm.FORMAT2, "lw", "$fp", "0($fp)"),
+			emit(null, String.format(RiscvAsm.FORMAT2, "lw", "s0", "0(s0)"),
 					null);
-			emit(null, String.format(RiscvAsm.FORMAT1, "jr", "$ra"), null);
+			emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
 			break;
 		}
 	}
 
 	private void emitProlog(Label entryLabel, int frameSize) {
 		emit(entryLabel.name, null, "function entry");
-		emit(null, "sw $fp, 0($sp)", null);
-		emit(null, "sw $ra, -4($sp)", null);
+		emit(null, "sw s0, 0(sp)", null);
+		emit(null, "sw ra, -4(sp)", null);
 
-		emit(null, "move $fp, $sp", null);
-		emit(null, "addiu $sp, $sp, "
+		emit(null, "move s0, sp", null);
+		emit(null, "addi sp, sp, "
 				+ (-frameSize - 2 * OffsetCounter.POINTER_SIZE), null);
 	}
 

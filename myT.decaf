@@ -1,5 +1,18 @@
 class Main 
 {
+	static int to_call(int a,int b)
+	{
+		int c;
+		c = a;
+		if(c>0)
+		{
+			int d;
+			d =  to_call(c-1,b-1);
+			return d * a;
+		}
+		else
+			return (a+b) / c;
+	}
 	static void main() 
 	{
 		int a;
@@ -10,6 +23,8 @@ class Main
 		c = 3;
 		if(a <= b)
 			c = c + 1;
+		else
+			c = to_call(a,b);
 		string s;
 		s = "hello";
 		Print(c,s);
