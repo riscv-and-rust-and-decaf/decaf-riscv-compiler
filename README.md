@@ -1,6 +1,7 @@
 # Decaf RISCV
+[![Build Status](https://travis-ci.org/riscv-and-rust-and-decaf/decaf-riscv-compiler.svg?branch=master)](https://travis-ci.org/riscv-and-rust-and-decaf/decaf-riscv-compiler)
 
-本仓库内容为 Decaf 语言在 riscv 指令集上的移植.
+Decaf 语言在 riscv 指令集上的移植.
 
 # 环境需求
 运行需要 rv32 工具链, 尤其是 `riscv32-unknown-elf-gcc`,
