@@ -31,15 +31,15 @@ public class Riscv implements MachineDescription {
 			new RiscvRegister(RiscvRegister.RegId.T0, "t0"), // temp / link reg
 
 			new RiscvRegister(RiscvRegister.RegId.T1, "t1"), // temp
-			new RiscvRegister(RiscvRegister.RegId.T2, "t2"), 
-			
+			new RiscvRegister(RiscvRegister.RegId.T2, "t2"),
+
 			new RiscvRegister(RiscvRegister.RegId.FP, "s0"), // save reg / frame pointer
 			new RiscvRegister(RiscvRegister.RegId.S1, "s1"), // save reg
 
 			new RiscvRegister(RiscvRegister.RegId.A0, "a0"), // func args / return values
-			new RiscvRegister(RiscvRegister.RegId.A1, "a1"), 
+			new RiscvRegister(RiscvRegister.RegId.A1, "a1"),
 			new RiscvRegister(RiscvRegister.RegId.A2, "a2"), // func args
-			new RiscvRegister(RiscvRegister.RegId.A3, "a3"), 
+			new RiscvRegister(RiscvRegister.RegId.A3, "a3"),
 			new RiscvRegister(RiscvRegister.RegId.A4, "a4"),
 			new RiscvRegister(RiscvRegister.RegId.A5, "a5"),
 			new RiscvRegister(RiscvRegister.RegId.A6, "a6"),
@@ -66,7 +66,7 @@ public class Riscv implements MachineDescription {
 		GENERAL_REGS = new RiscvRegister[RiscvRegister.RegId.T6.ordinal()
 				- RiscvRegister.RegId.S2.ordinal()];
 		System.arraycopy(REGS, RiscvRegister.RegId.S2.ordinal(), GENERAL_REGS,
-				0, GENERAL_REGS.length);  //TODO
+				0, GENERAL_REGS.length);
 	}
 
 	private RegisterAllocator regAllocator;
@@ -97,15 +97,7 @@ public class Riscv implements MachineDescription {
 	@Override
 	public void emitAsm(List<FlowGraph> gs) {
 		emit(null, ".section .text", null);
-
-		emit("_PrintInt", null, null); // wait for print
-		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
-		
-		emit("_PrintString", null, null);
-		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
-		
-		emit("_Alloc", null, null);
-		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+		emitIntrinsic();
 
 		for (FlowGraph g : gs) {
 			regAllocator.reset();
@@ -127,17 +119,28 @@ public class Riscv implements MachineDescription {
 			emitTrace(g.getBlock(0), g);
 			output.println();
 		}
-		for (int i = 0; i < 3; i++) {
-			output.println();
-		}
+
 		emitStringConst();
 	}
 
+	private void emitIntrinsic() {
+		emit(null, null, "intrinsic library");
+		emit("_PrintInt", null, null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+		emit("_PrintString", null, null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+		emit("_Alloc", null, null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+		emit(null, null, "end intrinsic library");
+	}
+
 	private void emitStringConst() {
+		emit(null, null, "string table");
 		emit(null, ".section .rodata", null);
 		for (Entry<String, String> e : stringConst.entrySet()) {
 			emit(e.getValue(), ".string " + MiscUtils.quote(e.getKey()), null);
 		}
+		emit(null, null, "end string table");
 	}
 
 	private void genAsmForBB(BasicBlock bb) {
@@ -223,25 +226,10 @@ public class Riscv implements MachineDescription {
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "la", tac.op0.reg,
 						tac.vt.name));
 				break;
-			case LOAD_IMM4: // hight 20 , not 16
+			case LOAD_IMM4:
 				if (!tac.op1.isConst) {
 					throw new IllegalArgumentException();
 				}
-				/*
-				int high = tac.op1.value >> 16;
-				int low = tac.op1.value & 0x0000FFFF;
-				if (high == 0) {
-					bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "li",
-							tac.op0.reg, low));
-				} else {
-					bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "lui",
-							tac.op0.reg, high));
-					if (low != 0) {
-						bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "addiu",
-								tac.op0.reg, tac.op0.reg, low));
-					}
-				}
-				*/
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "li",
 					tac.op0.reg, tac.op1.value));
 				break;
@@ -281,16 +269,8 @@ public class Riscv implements MachineDescription {
 					"s0"));
 		}
 		if (call.opc == Tac.Kind.DIRECT_CALL) {
-			/*
-			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "jal", call.label));
-			// jal offset == jal x1(=ra) offset
-			*/
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "call", call.label));
 		} else {
-			/*
-			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "jalr", call.op1.reg));
-			// jalr offset == jalr x1(=ra) offset 0
-			*/
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "tail", call.label));
 		}
 		if (call.op0 != null) {
@@ -395,7 +375,7 @@ public class Riscv implements MachineDescription {
 
 	private String emitToString(String label, String body, String comment) {
 		if (comment != null && label == null && body == null) {
-			return "                                        # " + comment;
+			return "# " + comment;
 		} else {
 			StringWriter sw = new StringWriter();
 			PrintWriter pw = new PrintWriter(sw);
@@ -420,5 +400,4 @@ public class Riscv implements MachineDescription {
 	private void emit(String label, String body, String comment) {
 		output.println(emitToString(label, body, comment));
 	}
-
 }

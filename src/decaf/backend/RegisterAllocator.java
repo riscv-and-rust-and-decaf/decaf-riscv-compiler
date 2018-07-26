@@ -235,5 +235,4 @@ public class RegisterAllocator {
 	private void findRegForWrite(Tac tac, Temp temp) {
 		findReg(tac, temp, false);
 	}
-
 }

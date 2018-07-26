@@ -85,7 +85,6 @@ public final class Driver {
     }
 
     private void compile() {
-
         Tree.TopLevel tree = parser.parseFile();
         checkPoint();
         if (option.getLevel() == Option.Level.LEVEL0) {
@@ -94,6 +93,7 @@ public final class Driver {
             pw.close();
             return;
         }
+
         BuildSym.buildSymbol(tree);
         checkPoint();
         TypeCheck.checkType(tree);
@@ -104,6 +104,7 @@ public final class Driver {
             pw.close();
             return;
         }
+
         PrintWriter pw = new PrintWriter(option.getOutput());
         Translater tr = Translater.translate(tree);
         checkPoint();
