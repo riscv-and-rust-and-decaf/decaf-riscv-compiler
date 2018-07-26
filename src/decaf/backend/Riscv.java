@@ -140,6 +140,7 @@ public class Riscv implements MachineDescription {
 		emitDelegatedIntrinsic("_PrintBool", 1);
 		emitDelegatedIntrinsic("_Alloc", 1);
 		emitDelegatedIntrinsic("_Halt", 0);
+		emitDelegatedIntrinsic("_StringEqual", 2);
 		// Alloc intrinsic:
 	}
 
@@ -280,7 +281,7 @@ public class Riscv implements MachineDescription {
 		if (call.opc == Tac.Kind.DIRECT_CALL) {
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "call", call.label));
 		} else {
-			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "tail", call.label));
+			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT1, "jalr", call.op1.reg));
 		}
 		if (call.op0 != null) {
 			bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "move", call.op0.reg,

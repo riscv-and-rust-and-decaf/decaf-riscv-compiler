@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 void _wrjlibc__PrintInt(int v) {
 	printf("%d", v);
@@ -26,6 +27,9 @@ void* _wrjlibc__Alloc(unsigned size) {
 	return malloc(size);
 }
 
+int _wrjlibc__StringEqual(char* a, char* b) {
+	return !strcmp(a, b);
+}
 
 #else
 // if you are running on rucore, use this
@@ -100,6 +104,12 @@ void* _wrjlibc__Alloc(unsigned size) {
 		wrjbrk += size;
 		return rv;
 	}
+}
+
+int _wrjlibc__StringEqual(char* a, char* b) {
+	for (int i = 0; a[i] || b[i]; i++)
+		if (a[i] != b[i]) return 0;
+	return 1;
 }
 
 #endif // HAS_LIBC
