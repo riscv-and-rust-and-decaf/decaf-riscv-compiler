@@ -1,0 +1,36 @@
+#!/bin/bash
+SPIKE=/home/hob/Programs/riscv/bin/spike
+PROXYKERNEL=/home/hob/Programs/riscv/riscv32-unknown-elf/bin/pk
+
+TESTCASES="TestIntrinsics"
+TESTCASES=(${TESTCASES})
+
+EXITFLAG=0
+
+make clean >/dev/null 2>&1
+if ! make exe >/dev/null
+then
+	echo "Make failed!"
+	exit 1
+fi
+
+for tc in ${TESTCASES}
+do
+	echo -n ${tc} ": "
+	if ! [[ -e ${tc} ]]
+	then
+		echo -e "\033[31m [fail] can't find executable. \033[0m"
+		EXITFLAG=1
+		continue
+	fi
+	${SPIKE} ${PROXYKERNEL} ${tc} > ${tc}.output
+	if ! diff -q ${tc}.output ${tc}.answer > /dev/null
+	then
+		echo -e "\033[31m [fail] wrong output. \033[0m"
+		EXITFLAG=1
+		continue
+	fi
+	echo -e "\033[32m [pass] \033[0m"
+done
+
+exit ${EXITFLAG}

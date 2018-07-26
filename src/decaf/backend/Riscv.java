@@ -123,15 +123,24 @@ public class Riscv implements MachineDescription {
 		emitStringConst();
 	}
 
+	private void emitDelegatedIntrinsic(String func, int nargs) {
+		emit(func, null, null);
+		// load arguments from stack. 
+		// (normal riscv pass args in regs, but decaf uses stack for arg passing)
+		for (int i = 0; i < nargs; i++)
+			emit(null, String.format(RiscvAsm.FORMAT4, "lw", "a" + i, 4 * (i+1), "sp"), null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "tail", "_wrjlibc_" + func), null);
+		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
+	}
+
 	private void emitIntrinsic() {
 		emit(null, null, "intrinsic library");
-		emit("_PrintInt", null, null);
-		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
-		emit("_PrintString", null, null);
-		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
-		emit("_Alloc", null, null);
-		emit(null, String.format(RiscvAsm.FORMAT1, "jr", "ra"), null);
-		emit(null, null, "end intrinsic library");
+		emitDelegatedIntrinsic("_PrintInt", 1);
+		emitDelegatedIntrinsic("_PrintString", 1);
+		emitDelegatedIntrinsic("_PrintBool", 1);
+		emitDelegatedIntrinsic("_Alloc", 1);
+		emitDelegatedIntrinsic("_Halt", 0);
+		// Alloc intrinsic:
 	}
 
 	private void emitStringConst() {
@@ -340,12 +349,15 @@ public class Riscv implements MachineDescription {
 
 	private void emitProlog(Label entryLabel, int frameSize) {
 		emit(entryLabel.name, null, "function entry");
+		emit(null, null, "prolog");
 		emit(null, "sw s0, 0(sp)", null);
 		emit(null, "sw ra, -4(sp)", null);
 
 		emit(null, "move s0, sp", null);
+		// XXX: it'll crash if stack size is too big
 		emit(null, "addi sp, sp, "
 				+ (-frameSize - 2 * OffsetCounter.POINTER_SIZE), null);
+		emit(null, null, "end prolog");
 	}
 
 	@Override
