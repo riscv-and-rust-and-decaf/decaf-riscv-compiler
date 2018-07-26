@@ -12,11 +12,16 @@
 为了编译 Decaf 编译器, 需要 `ant` 工具.
 
 # 运行测试
+需要先配置测试文件 `TestCases/rv/testall`, 修改
+```
+SPIKE=/home/hob/Programs/riscv/bin/spike
+PROXYKERNEL=/home/hob/Programs/riscv/riscv32-unknown-elf/bin/pk
+```
+为你的 `spike` 和 `pk` 的位置.
+
 ~~~ bash
 $ ant
-$ cd TestCases/wrjlibc
-$ make
-$ cd ../rv
+$ cd TestCases/rv
 $ ./testall
 ~~~
 

@@ -16,7 +16,10 @@ clean:
 %.s: %.decaf $(DECAF_JAR)
 	java -jar $(DECAF_JAR) -l 4 $< > $@
 
-%: %.s $(WRJLIBC_OBJ)
+$(EXES): %: %.s $(WRJLIBC_OBJ)
 	riscv32-unknown-elf-gcc $(WRJLIBC_OBJ) $< -o $@
+
+$(WRJLIBC_OBJ):
+	make -C $(WRJLIBC_DIR)
 
 .PHONY: all asm clean
