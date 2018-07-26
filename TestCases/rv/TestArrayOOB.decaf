@@ -1,0 +1,8 @@
+class Main {
+	static void main() {
+		// out of bound exception
+		int[] a;
+		a = new int[2];
+		a[2] = 2;
+	}
+}

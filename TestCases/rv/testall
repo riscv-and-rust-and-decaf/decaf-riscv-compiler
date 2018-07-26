@@ -2,8 +2,7 @@
 SPIKE=/home/hob/Programs/riscv/bin/spike
 PROXYKERNEL=/home/hob/Programs/riscv/riscv32-unknown-elf/bin/pk
 
-TESTCASES="TestIntrinsics"
-TESTCASES=(${TESTCASES})
+TESTCASES=`ls *.decaf`
 
 EXITFLAG=0
 
@@ -14,8 +13,9 @@ then
 	exit 1
 fi
 
-for tc in ${TESTCASES}
+for tc_ in ${TESTCASES}
 do
+	tc=${tc_%.decaf}
 	echo -n ${tc} ": "
 	if ! [[ -e ${tc} ]]
 	then

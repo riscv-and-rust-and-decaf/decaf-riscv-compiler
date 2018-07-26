@@ -1,0 +1,92 @@
+class BinOp {
+	int op(int a, int b) { return 0; }
+}
+
+class AdderSuber extends BinOp {
+	bool isAdd;
+
+	void setAdd(bool isAdd) {
+		this.isAdd = isAdd;
+	}
+
+	int op(int a, int b) {
+		if (this.isAdd)
+			return a + b;
+		else
+			return a - b;
+	}
+}
+
+class Muler extends BinOp {
+	int op(int a, int b) {
+		return a * b;
+	}
+}
+
+class Diver extends BinOp {
+	int op(int a, int b) {
+		return a / b;
+	}
+}
+
+class Foobar extends BinOp {
+	string mode;
+	void setMode(string mode) {
+		this.mode = mode;
+	}
+	string getMode() {
+		return mode;
+	}
+
+	int op(int a, int b) {
+		if (mode == "add") {
+			return a + b;
+		} else if (mode == "sub") {
+			return a - b;
+		} else if (mode == "mul") {
+			return a * b;
+		} else {
+			return 0;
+		}
+	}
+}
+
+class Main {
+	static void main() {
+		class BinOp op;
+		op = new BinOp();
+		Print(op.op(2, 3), "\n");
+
+		op = new AdderSuber();
+		class AdderSuber as;
+		as = (class AdderSuber) op;
+		as.setAdd(false);
+		Print(as.op(2, 3), "\n");
+		as.setAdd(true);
+		Print(as.op(2, 3), "\n");
+
+		class Muler m;
+		m = new Muler();
+		Print(m.op(2, 3), "\n");
+
+		op = new Diver();
+		class Diver d;
+		d = (class Diver) op;
+		Print(d.op(20, 3), "\n");
+
+		class Foobar l;
+		l = new Foobar();
+		l.setMode("add");
+		Print(l.getMode(), "\n");
+		Print(l.op(2, 3), "\n");
+		l.setMode("sub");
+		Print(l.getMode(), "\n");
+		Print(l.op(2, 3), "\n");
+		l.setMode("mul");
+		Print(l.getMode(), "\n");
+		Print(l.op(2, 3), "\n");
+		l.setMode("adda");
+		Print(l.getMode(), "\n");
+		Print(l.op(20, 3), "\n");
+	}
+}

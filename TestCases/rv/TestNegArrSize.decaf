@@ -1,0 +1,11 @@
+class Main {
+	static void main() {
+		int sz;
+		sz = 2;
+		string[] a;
+		a = new string[sz];
+		Print("ok here\n");
+		sz = -1;
+		a = new string[sz];
+	}
+}
