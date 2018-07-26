@@ -1,11 +1,50 @@
 language: java
-
 jdk:
   - openjdk8
 
-install: ant
+sudo: false
+cache: apt
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+      - gperf
+      - autoconf
+      - automake
+      - autotools-dev
+      - libmpc-dev
+      - libmpfr-dev
+      - libgmp-dev
+      - gawk
+      - build-essential
+      - bison
+      - flex
+      - texinfo
+      - python-pexpect
+      - libusb-1.0-0-dev
+      - device-tree-compiler
+env:
+  global:
+    - RISCV="/home/travis/riscv_install"
+    - MAKEFLAGS="-j2"
+    - PATH="/home/travis/riscv_install/bin:$PATH"
+    - CXX=g++-4.8
+    - CC=gcc-4.8
+
+before_install:
+  - git clone https://github.com/riscv/riscv-tools.git
+  - cd riscv-tools
+  - git submodule update --init
+  - mkdir -p $RISCV
+
+install: 
+  - cd riscv-tools
+  - travis_wait 30 ./build-rv32ima.sh
 
 script:
-    - ant
-    - cd TestCases/rv
-    - ./testall
+  - ant
+  - cd TestCases/rv
+  - ./testall
