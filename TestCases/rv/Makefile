@@ -4,7 +4,7 @@ DECAF_JAR := ../../result/decaf.jar
 WRJLIBC_DIR := ../wrjlibc
 WRJLIBC_OBJ := $(WRJLIBC_DIR)/wrjlibc.o
 
-all: asm
+all: exe
 
 asm: $(ASMS)
 
@@ -13,7 +13,7 @@ exe: $(EXES)
 clean:
 	rm $(ASMS) $(EXES)
 
-%.s: %.decaf $(DECAF_JAR)
+$(ASMS): %.s: %.decaf $(DECAF_JAR)
 	java -jar $(DECAF_JAR) -l 4 $< > $@
 
 $(EXES): %: %.s $(WRJLIBC_OBJ)

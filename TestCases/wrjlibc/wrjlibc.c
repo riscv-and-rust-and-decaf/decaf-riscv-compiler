@@ -33,11 +33,40 @@ int _wrjlibc__StringEqual(char* a, char* b) {
 
 #else
 // if you are running on rucore, use this
-//	(but it's ok if this is used on spike)
-#include <unistd.h>
 
-#define syscall_write(...) write(__VA_ARGS__)
-#define syscall_exit(...) _exit(__VA_ARGS__)
+int syscall_write(int fd, const char* buf, int size) {
+	int rv;
+	__asm__ __volatile__ (
+			"li a7, %1\n\t"
+			"mv a0, %2\n\t"
+			"mv a1, %3\n\t"
+			"mv a2, %4\n\t"
+			"ecall\n\t"
+			"mv %0, a0\n\t"
+			: "=r" (rv)
+			: "i" (64), // write sysno
+			  "r" (fd),
+			  "r" (buf),
+			  "r" (size)
+			: "a0", "a1", "a2", "a7"
+	);
+	return rv;
+}
+
+int syscall_exit(int err) {
+	int rv;
+	__asm__ __volatile__ (
+			"li a7, %1\n\t"
+			"mv a0, %2\n\t"
+			"ecall\n\t"
+			"mv %0, a0\n\t"
+			: "=r" (rv)
+			: "i" (93), // exit sysno
+			  "r" (err)
+			: "a0", "a7"
+	);
+	return rv;
+}
 
 // guarantees no partial write unless error happened
 void write_flushed(int fd, const char* v, int size) {
@@ -53,8 +82,11 @@ void write_flushed(int fd, const char* v, int size) {
 }
 
 const char* num = "num";
+// what the fxxk? If I put this on stack,
+//  it crashes with my own syscall_write
+// if it's a global variable, everything's fine?
+char buf[11]; // 11 chars ought to be enough
 void _wrjlibc__PrintInt(int v) {
-	char buf[11]; // 11 chars ought to be enough
 	int len = 10;
 	int neg = 0;
 	if (v < 0) {
