@@ -16,7 +16,7 @@ clean:
 $(ASMS): %.s: %.decaf $(DECAF_JAR)
 	java -jar $(DECAF_JAR) -l 4 $< > $@
 
-$(EXES): %: %.s $(WRJLIBC_OBJ)
+$(EXES): %: %.s
 	riscv32-unknown-elf-gcc $(WRJLIBC_OBJ) $< -o $@
 
 $(WRJLIBC_OBJ):

@@ -6,6 +6,15 @@ TESTCASES=`ls *.decaf`
 
 EXITFLAG=0
 
+pushd .
+cd ../wrjlibc
+make clean > /dev/null 2>&1
+if ! HAS_LIBC=1 make >/dev/null
+then
+	echo "Make wrjlibc failed"
+	exit 1
+fi
+popd
 make clean >/dev/null 2>&1
 if ! make exe >/dev/null
 then

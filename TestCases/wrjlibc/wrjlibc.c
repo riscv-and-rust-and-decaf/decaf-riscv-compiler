@@ -1,6 +1,4 @@
-#undef HAS_LIBC
-
-#ifdef HAS_LIBC
+#if HAS_LIBC
 // If you are running on spike, then use this
 #include <stdio.h>
 #include <unistd.h>
@@ -33,57 +31,72 @@ int _wrjlibc__StringEqual(char* a, char* b) {
 
 #else
 // if you are running on rucore, use this
+#include <stdarg.h>
 
-int syscall_write(int fd, const char* buf, int size) {
-	int rv;
-	__asm__ __volatile__ (
-			"li a7, %1\n\t"
-			"mv a0, %2\n\t"
-			"mv a1, %3\n\t"
-			"mv a2, %4\n\t"
-			"ecall\n\t"
-			"mv %0, a0\n\t"
-			: "=r" (rv)
-			: "i" (64), // write sysno
-			  "r" (fd),
-			  "r" (buf),
-			  "r" (size)
-			: "a0", "a1", "a2", "a7"
-	);
-	return rv;
+#define MAX_ARGS            5
+#define SYS_write 103
+#define SYS_exit 1
+
+static inline int
+syscall(int num, ...) {
+    va_list ap;
+    va_start(ap, num);
+    unsigned a[MAX_ARGS];
+    int i, ret;
+    for (i = 0; i < MAX_ARGS; i ++) {
+        a[i] = va_arg(ap, unsigned);
+    }
+    va_end(ap);
+
+    asm volatile (
+        "lw a0, %1\n"
+        "lw a1, %2\n"
+        "lw a2, %3\n"
+        "lw a3, %4\n"
+        "lw a4, %5\n"
+        "lw a5, %6\n"
+        "ecall\n"
+        "sw a0, %0"
+        : "=m" (ret)
+        : "m" (num),
+          "m" (a[0]),
+          "m" (a[1]),
+          "m" (a[2]),
+          "m" (a[3]),
+          "m" (a[4])
+        : "memory"
+      );
+    return ret;
 }
 
-int syscall_exit(int err) {
-	int rv;
-	__asm__ __volatile__ (
-			"li a7, %1\n\t"
-			"mv a0, %2\n\t"
-			"ecall\n\t"
-			"mv %0, a0\n\t"
-			: "=r" (rv)
-			: "i" (93), // exit sysno
-			  "r" (err)
-			: "a0", "a7"
-	);
-	return rv;
+int
+sys_write(int fd, const void *base, unsigned len) {
+    return syscall(SYS_write, fd, base, len);
+}
+
+int
+sys_exit(int error_code) {
+    return syscall(SYS_exit, error_code);
 }
 
 // guarantees no partial write unless error happened
 void write_flushed(int fd, const char* v, int size) {
-	int n_totwr = 0;
-	while (n_totwr < size) {
-		int n_wr = syscall_write(fd, v + n_totwr, size - n_totwr);
-		if (n_wr < 0) {
-			// error?!
-		} else {
-			n_totwr += n_wr;
-		}
-	}
+	sys_write(fd, v, size);
+// Seems there's some bug with the return value of write?
+//	int n_totwr = 0;
+//	while (n_totwr < size) {
+//		int n_wr = sys_write(fd, v + n_totwr, size - n_totwr);
+//		if (n_wr < 0) {
+//			// error?!
+//		} else {
+//			n_totwr += n_wr;
+//		}
+//	}
 }
 
 const char* num = "num";
 // what the fxxk? If I put this on stack,
-//  it crashes with my own syscall_write
+//  it crashes with my own sys_write
 // if it's a global variable, everything's fine?
 char buf[11]; // 11 chars ought to be enough
 void _wrjlibc__PrintInt(int v) {
@@ -119,7 +132,7 @@ void _wrjlibc__PrintBool(int v) {
 }
 
 void _wrjlibc__Halt(void) {
-	syscall_exit(1);
+	sys_exit(1);
 }
 
 // 1M heap space
@@ -130,7 +143,7 @@ int wrjbrk = 0;
 // a stupid allocator
 void* _wrjlibc__Alloc(unsigned size) {
 	if (wrjbrk + size > BUF_SIZE) {
-		return NULL; // out of memory
+		return 0; // out of memory
 	} else {
 		void* rv = wrjbuf + wrjbrk;
 		wrjbrk += size;
