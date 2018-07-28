@@ -157,4 +157,10 @@ int _wrjlibc__StringEqual(char* a, char* b) {
 	return 1;
 }
 
+extern void main();
+void _start() {
+	main();
+	_wrjlibc__Halt();	// graceful exit
+}
+
 #endif // HAS_LIBC

@@ -3,6 +3,8 @@ EXES := $(patsubst %.decaf,%,$(wildcard *.decaf))
 DECAF_JAR := ../../result/decaf.jar
 WRJLIBC_DIR := ../wrjlibc
 WRJLIBC_OBJ := $(WRJLIBC_DIR)/wrjlibc.o
+CFLAGS="-nostartfiles -nostdlib -nodefaultlibs -no-pie -T linker.ld"
+CC=riscv32-unknown-elf-gcc
 
 all: exe
 
@@ -17,7 +19,7 @@ $(ASMS): %.s: %.decaf $(DECAF_JAR)
 	java -jar $(DECAF_JAR) -l 4 $< > $@
 
 $(EXES): %: %.s
-	riscv32-unknown-elf-gcc $(WRJLIBC_OBJ) $< -o $@
+	$(CC) $(CFLAGS) $(WRJLIBC_OBJ) $< -o $@ 
 
 $(WRJLIBC_OBJ):
 	make -C $(WRJLIBC_DIR)
