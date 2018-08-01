@@ -29,6 +29,99 @@ int _wrjlibc__StringEqual(char* a, char* b) {
 	return !strcmp(a, b);
 }
 
+
+#elif BAREMETAL
+
+#define ADR_SERIAL_BUF (0x10000005)
+#define ADR_SERIAL_DAT (0x10000000)
+
+#define GETCHAR_BLK(c) {while(!((*((volatile char*)ADR_SERIAL_BUF)) & 0x1)); \
+    (c) = *((volatile char*)ADR_SERIAL_DAT); }
+#define PUTCHAR(c) {while(!((*((volatile char*)ADR_SERIAL_BUF)) & 0x20)); \
+    (*((volatile char*)ADR_SERIAL_DAT) = (c));}
+
+int
+sys_write(int fd, const void *base, unsigned len) {
+	// ignore fd
+	const char* c = base;
+	for (int i = 0; i < len; i++)
+		PUTCHAR(c[i]);
+	return len;
+}
+
+int
+sys_exit(int error_code) {
+	// on baremetal, just hang
+	while (1) ;
+}
+
+// guarantees no partial write unless error happened
+void write_flushed(int fd, const char* v, int size) {
+	sys_write(fd, v, size);
+}
+
+// what the fxxk? If I put this on stack,
+//  it crashes with my own sys_write
+// if it's a global variable, everything's fine?
+char buf[11]; // 11 chars ought to be enough
+void _wrjlibc__PrintInt(int v) {
+	int len = 10;
+	int neg = 0;
+	if (v < 0) {
+		neg = 1;
+		v = -v;
+	}
+	do {
+		buf[len--] = v % 10 + '0';
+		v /= 10;
+	} while (v > 0);
+	if (neg)
+		buf[len--] = '-';
+	write_flushed(1, buf + len + 1, 10 - len);
+}
+
+void _wrjlibc__PrintString(char* v) {
+	int len = 0;
+	while (v[len] != 0) len++;
+	write_flushed(1, v, len);
+}
+
+const char* truestr = "true";
+const char* falsestr = "false";
+void _wrjlibc__PrintBool(int v) {
+	if (v) {
+		write_flushed(1, truestr, 4);
+	} else {
+		write_flushed(1, falsestr, 5);
+	}
+}
+
+void _wrjlibc__Halt(void) {
+	sys_exit(1);
+}
+
+// 1M heap space
+#define BUF_SIZE 1048576
+char wrjbuf[BUF_SIZE];
+int wrjbrk = 0;
+
+// a stupid allocator
+void* _wrjlibc__Alloc(unsigned size) {
+	if (wrjbrk + size > BUF_SIZE) {
+		return 0; // out of memory
+	} else {
+		void* rv = wrjbuf + wrjbrk;
+		wrjbrk += size;
+		return rv;
+	}
+}
+
+int _wrjlibc__StringEqual(char* a, char* b) {
+	for (int i = 0; a[i] || b[i]; i++)
+		if (a[i] != b[i]) return 0;
+	return 1;
+}
+
 #else
 // if you are running on rucore, use this
 #include <stdarg.h>
@@ -94,7 +187,6 @@ void write_flushed(int fd, const char* v, int size) {
 //	}
 }
 
-const char* num = "num";
 // what the fxxk? If I put this on stack,
 //  it crashes with my own sys_write
 // if it's a global variable, everything's fine?
@@ -160,7 +252,7 @@ int _wrjlibc__StringEqual(char* a, char* b) {
 extern void main();
 void _start() {
 	main();
-	_wrjlibc__Halt();	// graceful exit
+	_wrjlibc__Halt();
 }
 
 #endif // HAS_LIBC

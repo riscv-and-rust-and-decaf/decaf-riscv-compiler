@@ -16,7 +16,7 @@ then
 fi
 popd
 make clean >/dev/null 2>&1
-if ! make exe >/dev/null
+if ! HAS_LIBC=1 make exe >/dev/null
 then
 	echo "Make failed!"
 	exit 1

@@ -1,0 +1,26 @@
+class Animal {
+
+}
+
+class Cat extends Animal {
+
+}
+
+class Dog extends Animal {
+
+}
+
+class Main {
+	static void main() {
+		Print("Hello World Decaf!\n");
+		class Animal a;
+		a = new Cat();
+		Print("new animal!\n");
+		class Cat c;
+		c = (class Cat) a;
+		Print("new cat!\n");
+		class Dog d;
+		d = (class Dog) a;
+		Print("new dog!\n");
+	}
+}

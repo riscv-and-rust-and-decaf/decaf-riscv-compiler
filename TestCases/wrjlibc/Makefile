@@ -1,9 +1,11 @@
 all: wrjlibc.o
 
-clean:
-	rm *.o *.a
+CFLAGS=-nostdlib -nodefaultlibs -nostartfiles
 
-%.o: %.c
-	riscv32-unknown-elf-gcc $^ -c -O2 -DHAS_LIBC=$(HAS_LIBC)
+clean:
+	rm *.o
+
+wrjlibc.o: wrjlibc.c
+	riscv32-unknown-elf-gcc $^ -c -O2 -DHAS_LIBC=$(HAS_LIBC) -DBAREMETAL=$(BAREMETAL) $(CFLAGS) -static
 
 .PHONY: all clean

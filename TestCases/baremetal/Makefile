@@ -1,31 +1,27 @@
 ASMS := $(patsubst %.decaf,%.s,$(wildcard *.decaf))
 EXES := $(patsubst %.decaf,%,$(wildcard *.decaf))
+BINS := $(patsubst %.decaf,%.bin,$(wildcard *.decaf))
 DECAF_JAR := ../../result/decaf.jar
 WRJLIBC_DIR := ../wrjlibc
 WRJLIBC_OBJ := $(WRJLIBC_DIR)/wrjlibc.o
-ifeq ($(HAS_LIBC), 1)
-CFLAGS=-no-pie
-else
 CFLAGS=-nostartfiles -nostdlib -nodefaultlibs -no-pie -T linker.ld
-endif
 CC=riscv32-unknown-elf-gcc
+OBJCOPY=riscv32-unknown-elf-objcopy
 
-all: exe
-
+all: $(BINS)
 asm: $(ASMS)
-
 exe: $(EXES)
-
-clean:
-	rm $(ASMS) $(EXES)
 
 $(ASMS): %.s: %.decaf $(DECAF_JAR)
 	java -jar $(DECAF_JAR) -l 4 $< > $@
 
-$(EXES): %: %.s
-	$(CC) $(CFLAGS) $(WRJLIBC_OBJ) $< -o $@ 
+$(EXES): %: %.s $(WRJLIBC_OBJ)
+	$(CC) $(CFLAGS) entry.s $(WRJLIBC_OBJ) $< -o $@ 
 
-$(WRJLIBC_OBJ):
-	make -C $(WRJLIBC_DIR)
+$(BINS): %.bin: %
+	$(OBJCOPY) -O binary $^ $@
 
-.PHONY: all asm clean
+clean:
+	rm $(ASMS) $(EXES) $(BINS)
+
+.PHONY: all asm exe clean
