@@ -201,8 +201,6 @@ public class Riscv implements MachineDescription {
 						tac.op0.reg));
 				break;
 			case NEQ: // no sne in Riscv!
-				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sne", tac.op0.reg,
-						tac.op1.reg, tac.op2.reg));
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT3, "sub", tac.op0.reg,
 						tac.op1.reg, tac.op2.reg));
 				bb.appendAsm(new RiscvAsm(RiscvAsm.FORMAT2, "snez", tac.op0.reg,
